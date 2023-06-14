@@ -1,7 +1,8 @@
-import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
+import 'package:bostadskostnad/logic.dart';
+import 'package:bostadskostnad/widgets/amortization_input_widget.dart';
+import 'package:bostadskostnad/widgets/interest_input_widget.dart';
+import 'package:bostadskostnad/widgets/result_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 void main() => runApp(const MyApp());
 
@@ -41,49 +42,6 @@ class _LoanCalculatorViewState extends State<LoanCalculatorView> {
   final _futureInterestRateController = TextEditingController();
   final _houseValue = TextEditingController();
   final _householdIncome = TextEditingController();
-
-  double _calculateCurrentCost() {
-    String loanOutput =
-        _loanSizeController.text.replaceAll(RegExp(r'[^0-9]'), '');
-    String currentPercent =
-        _currentInterestRateController.text.replaceAll(RegExp(r','), '.');
-
-    final loanSize = double.tryParse(loanOutput) ?? 0;
-    final currentInterestRate = double.tryParse(currentPercent) ?? 0;
-
-    return (loanSize * currentInterestRate / 100) / 12;
-  }
-
-  double _calculateFutureCost() {
-    String loanOutput =
-        _loanSizeController.text.replaceAll(RegExp(r'[^0-9]'), '');
-
-    String comingPercent =
-        _futureInterestRateController.text.replaceAll(RegExp(r','), '.');
-    final loanSize = double.tryParse(loanOutput) ?? 0;
-    final futureInterestRate = double.tryParse(comingPercent) ?? 0;
-
-    return (loanSize * futureInterestRate / 100) / 12;
-  }
-
-  String _calculateCostIncrease() {
-    if (_loanSizeController.text.isEmpty ||
-        _currentInterestRateController.text.isEmpty ||
-        _futureInterestRateController.text.isEmpty) {
-      return '0 kr';
-    }
-
-    double costIncrease = _calculateFutureCost() - _calculateCurrentCost();
-
-    String costIncreaseString = '';
-
-    if (costIncrease > 0) {
-      costIncreaseString = '+${costIncrease.toStringAsFixed(0)} kr';
-    } else {
-      costIncreaseString = '${costIncrease.toStringAsFixed(0)} kr';
-    }
-    return costIncreaseString;
-  }
 
   String _amortization() {
     if (_loanSizeController.text.isEmpty ||
@@ -171,62 +129,10 @@ class _LoanCalculatorViewState extends State<LoanCalculatorView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextField(
-                textAlign: TextAlign.center,
-                inputFormatters: [
-                  CurrencyTextInputFormatter(
-                      locale: 'sv_SE', decimalDigits: 0, symbol: '')
-                ],
-                controller: _loanSizeController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 30.0,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
-                  prefixText: 'kr',
-                  floatingLabelAlignment: FloatingLabelAlignment.center,
-                  labelText: 'Ditt bostadslån',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                textAlign: TextAlign.center,
-                controller: _currentInterestRateController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                      RegExp(r'^\d{0,2}([.,]\d{0,2})?$'))
-                ],
-                style: const TextStyle(
-                  fontSize: 30.0,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
-                    prefixText: '%',
-                    floatingLabelAlignment: FloatingLabelAlignment.center,
-                    labelText: 'Nuvarande ränta?',
-                    alignLabelWithHint: true),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                      RegExp(r'^\d{0,2}([.,]\d{0,2})?$'))
-                ],
-                textAlign: TextAlign.center,
-                controller: _futureInterestRateController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 30.0,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
-                  prefixText: '%',
-                  floatingLabelAlignment: FloatingLabelAlignment.center,
-                  labelText: 'Kommande ränta?',
-                ),
-              ),
+              InterestInputWidget(
+                  loanSizeController: _loanSizeController,
+                  currentInterestRateController: _currentInterestRateController,
+                  futureInterestRateController: _futureInterestRateController),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -247,49 +153,9 @@ class _LoanCalculatorViewState extends State<LoanCalculatorView> {
               ),
               const SizedBox(height: 16),
               _includeAmortization
-                  ? Column(
-                      children: [
-                        TextField(
-                          textAlign: TextAlign.center,
-                          controller: _houseValue,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(
-                            fontSize: 30.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          inputFormatters: [
-                            CurrencyTextInputFormatter(
-                                locale: 'sv_SE', decimalDigits: 0, symbol: '')
-                          ],
-                          decoration: const InputDecoration(
-                            prefixText: 'kr',
-                            floatingLabelAlignment:
-                                FloatingLabelAlignment.center,
-                            labelText: 'Bostadens värde',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          inputFormatters: [
-                            CurrencyTextInputFormatter(
-                                locale: 'sv_SE', decimalDigits: 0, symbol: '')
-                          ],
-                          textAlign: TextAlign.center,
-                          controller: _householdIncome,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(
-                            fontSize: 30.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          decoration: const InputDecoration(
-                            prefixText: 'kr',
-                            floatingLabelAlignment:
-                                FloatingLabelAlignment.center,
-                            labelText: 'Hushållets årsinkomst',
-                          ),
-                        ),
-                      ],
-                    )
+                  ? AmortizationWidget(
+                      houseValue: _houseValue,
+                      householdIncome: _householdIncome)
                   : const SizedBox(),
               const SizedBox(height: 16),
               const Divider(),
@@ -299,9 +165,17 @@ class _LoanCalculatorViewState extends State<LoanCalculatorView> {
               ),
               const Divider(),
               ResultWidget(
-                  currentCost: _calculateCurrentCost(),
-                  futureCost: _calculateFutureCost(),
-                  costIncrease: _calculateCostIncrease()),
+                currentCost: calculateCurrentCost(_loanSizeController.text,
+                    _currentInterestRateController.text),
+                futureCost: calculateFutureCost(_loanSizeController.text,
+                    _futureInterestRateController.text),
+                costIncrease: calculateCostIncrease(
+                  currentCost: calculateCurrentCost(_loanSizeController.text,
+                      _currentInterestRateController.text),
+                  futureCost: calculateFutureCost(_loanSizeController.text,
+                      _futureInterestRateController.text),
+                ),
+              ),
               const Divider(),
               _includeAmortization
                   ? Column(
@@ -333,48 +207,4 @@ class _LoanCalculatorViewState extends State<LoanCalculatorView> {
       ),
     );
   }
-}
-
-Widget ResultWidget(
-    {required double currentCost,
-    required double futureCost,
-    required String costIncrease}) {
-  return Center(
-    child: Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Dagens räntekostnad / månad: '),
-            Text(
-              '${currentCost.toStringAsFixed(0)} kr',
-              style: const TextStyle(fontSize: 40),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Kommande räntekostnad / månad: '),
-            Text(
-              '${futureCost.toStringAsFixed(0)} kr',
-              style: const TextStyle(fontSize: 40),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Förändring / månad: '),
-            Text(
-              costIncrease,
-              style: const TextStyle(fontSize: 40),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
 }
